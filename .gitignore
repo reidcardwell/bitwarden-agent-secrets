@@ -1,0 +1,10 @@
+# Never commit a real manifest from a consumer project into this toolkit
+/secrets-manifest.yaml
+
+# Local env / secrets — defense in depth; this repo should never hold either
+.env
+.env.*
+*.token
+
+# OS cruft
+.DS_Store
