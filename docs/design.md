@@ -12,22 +12,22 @@ When an agent runs a command, everything that command writes to stdout/stderr is
 
 - written to a session transcript on disk,
 - summarized into "memory" files,
-- and — increasingly — synced to cloud notes or knowledge bases.
+- and, increasingly, synced to cloud notes or knowledge bases.
 
-So the naive approach to giving an agent a credential —
+So the naive approach to giving an agent a credential:
 
 ```bash
 SECRET=$(bws secret get MY_SECRET)   # prints the value to stdout
 ```
 
-— quietly turns the agent's own memory pipeline into an exfiltration path. The credential, which should have existed for milliseconds inside one process, comes to rest in every place the transcript travels. No attacker required; you built the leak yourself.
+This quietly turns the agent's own memory pipeline into an exfiltration path. The credential, which should have existed for milliseconds inside one process, comes to rest in every place the transcript travels. No attacker required; you built the leak yourself.
 
 ## The principle: inject, never print
 
 The fix is to never let the secret cross into the agent's context in the first place. Secrets belong in the **environment variables of the child process that needs them**, and nowhere else:
 
-- **Not stdout** — the agent reads it.
-- **Not the command line** — it appears in `ps` and shell history.
+- **Not stdout**: the agent reads it.
+- **Not the command line**: it appears in `ps` and shell history.
 - **Not a file** the agent or a sync daemon can read.
 
 Bitwarden's CLI provides the right primitive: `bws run` fetches a project's secrets, injects them as environment variables into a named subprocess, and prints nothing. The value materializes inside that process, is used, and evaporates on exit.
@@ -36,7 +36,7 @@ Bitwarden's CLI provides the right primitive: `bws run` fetches a project's secr
 bws run --project-id "<uuid>" -- ./script.sh   # script reads $SECRET from env
 ```
 
-That single inversion — from "fetch then pass" to "inject into the child" — is the entire security story. The rest of this toolkit is ergonomics and guardrails around it.
+That single inversion, from "fetch then pass" to "inject into the child", is the entire security story. The rest of this toolkit is ergonomics and guardrails around it.
 
 ## Design decisions
 
@@ -52,10 +52,10 @@ That single inversion — from "fetch then pass" to "inject into the child" — 
 
 ## Why the official binary
 
-`bws` is installed as the **official release binary** from <https://github.com/bitwarden/sdk-sm/releases> — not via `cargo` or a third-party tap. For a tool whose entire job is handling secrets, the provenance of the binary is part of the threat model; the vendor's signed release is the trustworthy source.
+`bws` is installed as the **official release binary** from <https://github.com/bitwarden/sdk-sm/releases>, not via `cargo` or a third-party tap. For a tool whose entire job is handling secrets, the provenance of the binary is part of the threat model; the vendor's signed release is the trustworthy source.
 
 ## Non-goals
 
 - **Not a secrets store.** This wraps Bitwarden Secrets Manager; it stores nothing itself and transmits nothing anywhere except by shelling out to the official `bws`.
-- **Not a Laravel/runtime-config tool.** The use case is agents and CLIs running data tasks from a workstation outward — not the request lifecycle of a long-running app (where `env()`/config-cache rules would apply instead).
+- **Not a Laravel/runtime-config tool.** The use case is agents and CLIs running data tasks from a workstation outward, not the request lifecycle of a long-running app (where `env()`/config-cache rules would apply instead).
 - **Not per-secret injection filtering.** Injection granularity is the project; selection is which env var your code reads.

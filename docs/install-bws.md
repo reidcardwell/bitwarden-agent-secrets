@@ -1,6 +1,6 @@
 # Installing the official `bws` binary
 
-This toolkit shells out to Bitwarden's official Secrets Manager CLI, `bws`. Install it from the **signed vendor release** — not `cargo`, not a third-party tap. For a secrets tool, binary provenance is part of the threat model.
+This toolkit shells out to Bitwarden's official Secrets Manager CLI, `bws`. Install it from the **signed vendor release**, not `cargo`, not a third-party tap. For a secrets tool, binary provenance is part of the threat model.
 
 ## Download
 
@@ -32,4 +32,4 @@ Ensure `~/.local/bin` is on your `PATH`. If `bws` isn't found right after instal
 
 ## First-run note
 
-The `bws` CLI keeps its own encrypted state under `~/.config/bws/state`. That is **bws's** store — never hand-write your access token into it. Your token belongs in the OS keychain (see [`operator-guide.md`](./operator-guide.md) → "Set up a NEW machine").
+The `bws` CLI keeps its own encrypted state under `~/.config/bws/state`. That is **bws's** store; never hand-write your access token into it. Your token belongs in the OS keychain (see [`operator-guide.md`](./operator-guide.md) → "Set up a NEW machine").
