@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -lt 1 ]]; then
+    echo "usage: bws-token <handle>" >&2
+    exit 1
+fi
+
+handle="$1"
+key="bws-${handle}"
+
+if command -v security &>/dev/null; then
+    security find-generic-password -s "$key" -w
+elif command -v secret-tool &>/dev/null; then
+    secret-tool lookup service "$key"
+elif command -v pass &>/dev/null; then
+    pass show "$key"
+else
+    echo "bws-token: no supported secret store found (need macOS security, secret-tool, or pass)" >&2
+    exit 1
+fi
