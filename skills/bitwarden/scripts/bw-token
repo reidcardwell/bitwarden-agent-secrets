@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -lt 2 ]]; then
+    echo "usage: bw-token <handle> <key>" >&2
+    echo "  key: clientid | clientsecret | master" >&2
+    exit 1
+fi
+
+handle="$1"
+key="$2"
+
+case "$key" in
+    clientid|clientsecret|master) ;;
+    *)
+        echo "bw-token: invalid key '$key' (must be clientid, clientsecret, or master)" >&2
+        exit 1
+        ;;
+esac
+
+svc="bw-${key}-${handle}"
+
+if command -v security &>/dev/null; then
+    security find-generic-password -s "$svc" -w
+elif command -v secret-tool &>/dev/null; then
+    secret-tool lookup service "$svc"
+elif command -v pass &>/dev/null; then
+    pass show "$svc"
+else
+    echo "bw-token: no supported secret store found (need macOS security, secret-tool, or pass)" >&2
+    exit 1
+fi

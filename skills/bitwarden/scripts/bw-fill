@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    echo "usage: bw-fill <handle> <item-id>   copy the item's password to the clipboard" >&2
+    echo "       bw-fill --clear              empty the clipboard" >&2
+    exit 1
+}
+
+if [[ "${1:-}" == "--clear" ]]; then
+    [[ $# -eq 1 ]] || usage
+elif [[ $# -ne 2 ]]; then
+    usage
+fi
+
+# Agent shells on a Linux desktop (SSH/tmux/TTY) usually lack DISPLAY; target the local X server.
+if [[ "$(uname -s)" != "Darwin" && -z "${DISPLAY:-}" && -z "${WAYLAND_DISPLAY:-}" && -S /tmp/.X11-unix/X0 ]]; then
+    export DISPLAY=:0
+fi
+
+if command -v pbcopy &>/dev/null; then
+    copy_cmd=(pbcopy); clear_cmd=(pbcopy)
+elif [[ -n "${WAYLAND_DISPLAY:-}" ]] && command -v wl-copy &>/dev/null; then
+    copy_cmd=(wl-copy); clear_cmd=(wl-copy --clear)
+elif command -v xclip &>/dev/null; then
+    copy_cmd=(xclip -selection clipboard); clear_cmd=(xclip -selection clipboard)
+elif command -v wl-copy &>/dev/null; then
+    copy_cmd=(wl-copy); clear_cmd=(wl-copy --clear)
+else
+    echo "bw-fill: no supported clipboard tool found (pbcopy, xclip, wl-copy)" >&2
+    exit 1
+fi
+
+if [[ "$1" == "--clear" ]]; then
+    "${clear_cmd[@]}" </dev/null >/dev/null
+    echo "cleared"
+    exit 0
+fi
+
+BW_SESSION="$(bw-unlock "$1")"
+export BW_SESSION
+
+bw get password "$2" | "${copy_cmd[@]}" >/dev/null
+
+echo "copied"

@@ -3,8 +3,8 @@
 # environment (injected by `bws run`) and NEVER prints it.
 #
 # Run it injected, never directly:
-#   bwsx mac run --project-id "<prod-uuid>" -- ./sync.sh
-#   bwsx mac run --project-id "<stage-uuid>" -- ./sync.sh   # same script, other tier
+#   bwsx <handle> run --project-id "<prod-uuid>" -- ./sync.sh
+#   bwsx <handle> run --project-id "<stage-uuid>" -- ./sync.sh   # same script, other tier
 
 set -euo pipefail
 

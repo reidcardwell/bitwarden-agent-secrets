@@ -8,3 +8,6 @@
 
 # OS cruft
 .DS_Store
+
+# Python test cache
+__pycache__/

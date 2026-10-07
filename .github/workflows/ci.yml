@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  lint-and-audit:
+  lint-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,22 +14,26 @@ jobs:
       - name: shellcheck
         run: |
           sudo apt-get update && sudo apt-get install -y shellcheck
-          shellcheck bin/bws-token bin/bwsx scripts/bws-audit.sh install.sh examples/sync.sh skills/bws-secrets/examples/sync.sh
+          shellcheck skills/bitwarden/scripts/* skills/bitwarden/examples/*.sh install.sh tests/*.sh
 
       - name: syntax check
         run: |
-          for f in bin/bws-token bin/bwsx scripts/bws-audit.sh install.sh examples/sync.sh skills/bws-secrets/examples/sync.sh; do
+          for f in skills/bitwarden/scripts/* skills/bitwarden/examples/*.sh install.sh tests/*.sh; do
             bash -n "$f"
           done
+
+      - name: tests
+        run: |
+          python3 -m pip install --quiet pytest
+          tests/run.sh
 
       - name: audit (expects no FAIL on a clean checkout)
         run: |
           # Pre-install: the ~/.local/bin copies are absent, so (a) reports FAIL
           # by design. We assert the audit RUNS and only the install checks fail.
-          out="$(scripts/bws-audit.sh . || true)"
+          out="$(skills/bitwarden/scripts/bws-audit.sh . || true)"
           echo "$out"
           echo "$out" | grep -q 'AUDIT SUMMARY' || { echo 'audit did not complete'; exit 1; }
-          # No token-leak FAILs (checks b/c/d/e) may appear on a clean repo:
           if echo "$out" | grep -E '^\[FAIL\]' | grep -viE 'does not exist|stale|symlink|not executable'; then
             echo 'Unexpected non-install FAIL in audit'; exit 1
           fi

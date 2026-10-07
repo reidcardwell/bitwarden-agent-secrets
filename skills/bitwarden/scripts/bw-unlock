@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -lt 1 ]]; then
+    echo "usage: bw-unlock <handle>" >&2
+    exit 1
+fi
+
+handle="$1"
+
+if ! command -v bw &>/dev/null; then
+    echo "bw-unlock: 'bw' not found on PATH -- install the Bitwarden CLI" >&2
+    exit 1
+fi
+
+BW_CLIENTID="$(bw-token "$handle" clientid)"
+BW_CLIENTSECRET="$(bw-token "$handle" clientsecret)"
+export BW_CLIENTID BW_CLIENTSECRET
+
+bw login --apikey --quiet 2>/dev/null || true
+
+master="$(bw-token "$handle" master)"
+
+session="$(BW_MASTER="$master" bw unlock --passwordenv BW_MASTER --raw)"
+
+if [[ -z "$session" ]]; then
+    echo "bw-unlock: unlock returned empty session token" >&2
+    exit 1
+fi
+
+echo "$session"

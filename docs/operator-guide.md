@@ -10,7 +10,7 @@
 Bitwarden org
   └─ Project (e.g. prod, stage)            ← access is granted per-project
        └─ Secret (e.g. APP_DB_DSN)         ← name = the ENV VAR it becomes
-Machine account (e.g. "mac")               ← granted read on N projects; has ONE token
+Machine account (e.g. "laptop")            ← granted read on N projects; has ONE token
   └─ access token                          ← lives ENCRYPTED in the OS keychain
 Helpers on PATH (~/.local/bin):
   bws        ← official Bitwarden CLI
@@ -51,7 +51,7 @@ bwsx <handle> run --project-id "<PROJECT-UUID>" -- <your-command-or-script>
 `bws run` injects **every secret in the chosen project** as an env var (secret *name* → env var name). You don't filter at inject time; your command reads the env var(s) it wants:
 
 ```bash
-bwsx mac run --project-id "<uuid>" -- sh -c '
+bwsx <handle> run --project-id "<uuid>" -- sh -c '
   set -euo pipefail
   : "${APP_DB_DSN:?not injected}"
   some-tool "$APP_DB_DSN"   # uses the secret, never prints it
@@ -65,14 +65,14 @@ Want just one secret available? Put it in its own project. There is no `bws run 
 If two projects (e.g. `prod` and `stage`) both hold a secret named `APP_DB_DSN`, the **same script** runs against either tier; only the project changes:
 
 ```bash
-bwsx mac run --project-id "<prod-uuid>"  -- ./sync.sh   # $APP_DB_DSN = prod value
-bwsx mac run --project-id "<stage-uuid>" -- ./sync.sh   # $APP_DB_DSN = stage value
+bwsx <handle> run --project-id "<prod-uuid>"  -- ./sync.sh   # $APP_DB_DSN = prod value
+bwsx <handle> run --project-id "<stage-uuid>" -- ./sync.sh   # $APP_DB_DSN = stage value
 ```
 
 ### Hardening (optional)
 
 ```bash
-bwsx mac run --no-inherit-env --project-id "<uuid>" -- /abs/path/sync.sh
+bwsx <handle> run --no-inherit-env --project-id "<uuid>" -- /abs/path/sync.sh
 ```
 
 `--no-inherit-env` gives the child ONLY the injected secrets (not your shell env, including the token). It also strips `PATH`, so use absolute paths or pass needed vars with `--env KEY=VALUE`.
@@ -83,18 +83,18 @@ bwsx mac run --no-inherit-env --project-id "<uuid>" -- /abs/path/sync.sh
 
 ```bash
 # List projects a handle can reach (names + UUIDs, no secret values; safe):
-BWS_ACCESS_TOKEN=$(bws-token mac) bws project list
+BWS_ACCESS_TOKEN=$(bws-token <handle>) bws project list
 
 # List a project's secret NAMES only (values stripped in-pipe; safe):
-BWS_ACCESS_TOKEN=$(bws-token mac) \
+BWS_ACCESS_TOKEN=$(bws-token <handle>) \
   bws secret list "<PROJECT-UUID>" --output json \
   | python3 -c 'import json,sys;[print("  -",s["key"]) for s in json.load(sys.stdin)]'
 
 # Run a script with a project's secrets injected (the normal use):
-bwsx mac run --project-id "<PROJECT-UUID>" -- ./your-script.sh
+bwsx <handle> run --project-id "<PROJECT-UUID>" -- ./your-script.sh
 
 # Inspect ONE secret's value: HUMAN, OWN TERMINAL ONLY (prints plaintext!):
-bwsx mac secret get "<SECRET-ID>"
+bwsx <handle> secret get "<SECRET-ID>"
 ```
 
 ---
@@ -125,7 +125,7 @@ projects:
    - Linux desktop: `secret-tool store --label='bws <machine>' service bws-<machine>`.
    - Linux headless: `pass insert bws-<machine>`.
 4. Deploy helpers: run this repo's `./install.sh`.
-5. Verify: `bwsx <machine> run --project-id "<uuid>" -- printenv SOMEVAR | wc -c` (length only, no value), then `scripts/bws-audit.sh`.
+5. Verify: `bwsx <machine> run --project-id "<uuid>" -- printenv SOMEVAR | wc -c` (length only, no value), then `skills/bitwarden/scripts/bws-audit.sh`.
 
 ---
 
@@ -136,5 +136,5 @@ projects:
 | `bws project list` returns `[]` | Token valid but the machine account has **no project grants** → grant it a project. |
 | `command not found: bws` (just installed) | Shell cached the miss → `rehash` (zsh) or open a new tab. Or `~/.local/bin` not on PATH. |
 | `security: ... could not be found` | No keychain entry for that handle → run the `add-generic-password` step. |
-| Skill not found by the agent | The skill wasn't installed → re-run `./install.sh` (answer yes), or copy `skills/bws-secrets/` into your agent's skills dir. |
+| Skill not found by the agent | The skill wasn't installed → re-run `./install.sh` (answer yes), or copy `skills/bitwarden/` into your agent's skills dir. |
 | Secret injected but script sees empty var | Wrong `--project-id`, the secret isn't in that project, or its name ≠ the var you read. |

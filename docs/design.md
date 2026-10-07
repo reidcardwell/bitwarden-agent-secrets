@@ -48,6 +48,8 @@ That single inversion, from "fetch then pass" to "inject into the child", is the
 
 **A committed, secret-free manifest is the agent's map.** `secrets-manifest.yaml` routes logical names → project UUID + env-var name, with no credentials. The agent learns *what to inject and where* from version control, not by querying the secrets backend at runtime. A token *reaching* a project is not the same as the agent *knowing* it exists.
 
+**Password Manager logins go through a clipboard bridge.** A browser form can't read an environment variable, so `bw-fill` pipes `bw get password` straight into the clipboard tool and prints only `copied`; the agent pastes into the focused field and runs `bw-fill --clear` at once. Item lookups are scoped to one vault folder and filtered with `jq` so the password field never reaches stdout. This is a weaker guarantee than injection: the clipboard is readable by other apps, history managers and sync for as long as it holds the value. Clearing immediately narrows that window; prefer Secrets Manager whenever the consumer can take an env var.
+
 **An audit script enforces the invariants.** `bws-audit.sh` verifies the helpers are installed and unmodified, scans for tokens leaked into profiles/`.env`/tracked files, checks the keychain-only rule, and confirms the manifest is credential-free. It's a pre-flight a human or an agent can run before trusting the setup.
 
 ## Why the official binary
